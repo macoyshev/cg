@@ -19,6 +19,7 @@ void cg::world::model::load_obj(const std::filesystem::path& model_path)
 	tinyobj::ObjReaderConfig readerConfig;
 	readerConfig.mtl_search_path = model_path.parent_path().string();
 	readerConfig.triangulate = true;
+
 	tinyobj::ObjReader objReader;
 	
 	if (!objReader.ParseFromFile(model_path.string(), readerConfig)) {
@@ -26,9 +27,11 @@ void cg::world::model::load_obj(const std::filesystem::path& model_path)
 			THROW_ERROR(objReader.Error());
 		}
 	}
+
 	auto& shapes = objReader.GetShapes();
 	auto& materials = objReader.GetMaterials();
 	auto& attrib = objReader.GetAttrib();
+
 	allocate_buffers(shapes);
 	fill_buffers(shapes, attrib, materials, model_path.parent_path());
 }
@@ -75,16 +78,19 @@ float3 cg::world::model::compute_normal(const tinyobj::attrib_t& attrib, const t
 		attrib.vertices[3 * a_id.vertex_index + 1],
 		attrib.vertices[3 * a_id.vertex_index + 2]
 	);
+
 	float3 b(
 		attrib.vertices[3 * b_id.vertex_index + 0],
 		attrib.vertices[3 * b_id.vertex_index + 1],
 		attrib.vertices[3 * b_id.vertex_index + 2]
 	);
+
 	float3 c(
 		attrib.vertices[3 * c_id.vertex_index + 0],
 		attrib.vertices[3 * c_id.vertex_index + 1],
 		attrib.vertices[3 * c_id.vertex_index + 2]
 	);
+
 	return normalize(cross(b - a, c - a));
 }
 
@@ -104,6 +110,7 @@ void model::fill_vertex_data(cg::vertex& vertex, const tinyobj::attrib_t& attrib
 		vertex.ny = attrib.normals[3 * idx.normal_index + 1];
 		vertex.nz = attrib.normals[3 * idx.normal_index + 2];
 	}
+
 	if (idx.texcoord_index < 0) {
 		vertex.u = 0.f;
 		vertex.v = 0.f;
@@ -112,16 +119,19 @@ void model::fill_vertex_data(cg::vertex& vertex, const tinyobj::attrib_t& attrib
 		vertex.u = attrib.texcoords[2 * idx.texcoord_index + 0];
 		vertex.v = attrib.texcoords[2 * idx.texcoord_index + 1];
 	}
+
 	vertex.ambient_r = material.ambient[0];
 	vertex.ambient_g = material.ambient[1];
 	vertex.ambient_b = material.ambient[2];
+
 	vertex.diffuse_r = material.diffuse[0];
 	vertex.diffuse_g = material.diffuse[1];
 	vertex.diffuse_b = material.diffuse[2];
+
 	vertex.emissive_r = material.emission[0];
 	vertex.emissive_g = material.emission[1];
 	vertex.emissive_b = material.emission[2];
-}
+	}
 
 void model::fill_buffers(const std::vector<tinyobj::shape_t>& shapes, const tinyobj::attrib_t& attrib, const std::vector<tinyobj::material_t>& materials, const std::filesystem::path& base_folder)
 {

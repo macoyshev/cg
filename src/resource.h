@@ -125,7 +125,7 @@ namespace cg
 				static_cast<float>(r),
 				static_cast<float>(g),
 				static_cast<float>(b)
-			) / 255.f;
+				) / 255.f;
 		};
 		uint8_t r;
 		uint8_t g;

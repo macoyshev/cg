@@ -57,21 +57,26 @@ namespace cg::renderer
 		a = float3{vertex_a.x, vertex_a.y, vertex_a.z};
 		b = float3{vertex_b.x, vertex_b.y, vertex_b.z};
 		c = float3{vertex_c.x, vertex_c.y, vertex_c.z};
+		
 		ba = b - a;
 		ca = c - a;
+		
 		na = float3{vertex_a.nx, vertex_a.ny, vertex_a.nz};
 		nb = float3{vertex_b.nx, vertex_b.ny, vertex_b.nz};
 		nc = float3{vertex_c.nx, vertex_c.ny, vertex_c.nz};
+		
 		ambient = float3{
 			vertex_a.ambient_r,
 			vertex_a.ambient_g,
 			vertex_a.ambient_b
 		};
+		
 		diffuse = float3{
 			vertex_a.diffuse_r,
 			vertex_a.diffuse_g,
 			vertex_a.diffuse_b
 		};
+		
 		emissive = float3{
 			vertex_a.emissive_r,
 			vertex_a.emissive_g,
@@ -153,6 +158,7 @@ namespace cg::renderer
 	{
 		height = in_height;
 		width = in_width;
+
 		history = std::make_shared<cg::resource<float3>>(width, height);
 	}
 
@@ -182,11 +188,13 @@ namespace cg::renderer
 	template<typename VB, typename RT>
 	inline void raytracer<VB, RT>::build_acceleration_structure()
 	{
-		for (size_t shape_id=0; shape_id<index_buffers.size(); shape_id++) {
+	    for (size_t shape_id=0; shape_id<index_buffers.size(); shape_id++) {
 	        auto& index_buffer = index_buffers[shape_id];
 	        auto& vertex_buffer = vertex_buffers[shape_id];
 	        size_t index_id = 0;
+
 			aabb<VB> aabb;
+
 	        while(index_id < index_buffer->count())
 			{
 	            triangle<VB> triangle(
@@ -206,21 +214,27 @@ namespace cg::renderer
 			float3 right, float3 up, size_t depth, size_t accumulation_num)
 	{
 		float frame_weight = 1.f / static_cast<float>(accumulation_num);
+
 		for (int frame_id = 0; frame_id < accumulation_num; frame_id++)
 		{
 			std::cout << "Tracing frame #" << frame_id + 1 << "\n";
 			float2 jitter = get_jitter(frame_id);
 			#pragma omp parallel for
+	    	
 			for (int x = 0; x < width; x++) {
 	        	for (int y = 0; y < height; y++) {
 		            float u = (2.f * x + jitter.x) / static_cast<float>(width - 1) - 1.f;
 		            float v = (2.f * y + jitter.y) / static_cast<float>(height - 1) - 1.f;
 					u *= static_cast<float>(width) / static_cast<float>(height);
+					
 					float3 ray_direction = direction + u * right - v * up;
 					ray ray(position, ray_direction);
+
 					payload payload = trace_ray(ray, depth);
+
 					auto &history_pixel = history->item(x, y);
 					history_pixel += sqrt(payload.color.to_float3() * frame_weight);
+
 					if (frame_id == accumulation_num - 1)
 					{
 						render_target->item(x, y) = RT::from_float3(history_pixel);
@@ -239,9 +253,11 @@ namespace cg::renderer
 			return miss_shader(ray);
 		}
 		depth--;
+
 		payload closest_hit_payload{};
 		closest_hit_payload.t = max_t;
 		const triangle<VB>* closest_triangle = nullptr;
+		
 		for (auto& aabb: acceleration_structures)
 		{
 			if(!aabb.aabb_test(ray))
@@ -271,6 +287,7 @@ namespace cg::renderer
 			}
 		}
 		return miss_shader(ray);
+	
 	}
 
 	template<typename VB, typename RT>
@@ -281,23 +298,29 @@ namespace cg::renderer
 		payload.t = -1.f;
 		float3 pvec = cross(ray.direction, triangle.ca);
 		float det = dot(triangle.ba, pvec);
+		
 		if (det > -1e-8 && det < 1e-8)
 		{
 			return payload;
 		}
 		float inv_det = 1.f/det;
+		
 		float3 tvec = ray.position - triangle.a;
 		float u = dot(tvec, pvec) * inv_det;
+		
 		if (u < 0.f || u >1.f)
 		{
 			return payload;
 		}
+		
 		float3 qvec = cross(tvec, triangle.ba);
 		float v = dot(ray.direction, qvec) * inv_det;
+
 		if (v < 0.f || u + v >1.f)
 		{
 			return payload;
 		}
+
 		payload.t = dot(triangle.ca, qvec) * inv_det;
 		payload.bary = float3{1.f - u - v, u, v};
 		
@@ -345,10 +368,14 @@ namespace cg::renderer
 		{
 			aabb_max = aabb_min = triangle.a;
 		}
+
+
 		triangles.push_back(triangle);
+
 		aabb_max = max(aabb_max, triangle.a);
 		aabb_max = max(aabb_max, triangle.b);
 		aabb_max = max(aabb_max, triangle.c);
+
 		aabb_min = min(aabb_min, triangle.a);
 		aabb_min = min(aabb_min, triangle.b);
 		aabb_min = min(aabb_min, triangle.c);
@@ -368,6 +395,7 @@ namespace cg::renderer
 		float3 t1 = (aabb_min - ray.position) * inv_dir;
 		float3 tmin = min(t0, t1);
 		float3 tmax = max(t0, t1);
+
 		return maxelem(tmin) <= minelem(tmax);
 	}
 
