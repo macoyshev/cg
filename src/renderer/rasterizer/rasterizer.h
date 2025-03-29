@@ -59,6 +59,7 @@ namespace cg::renderer
 		{
 			render_target = in_render_target;
 		}
+
 		if (in_depth_buffer)
 		{
 			depth_buffer = in_depth_buffer;
@@ -69,7 +70,7 @@ namespace cg::renderer
 	inline void rasterizer<VB, RT>::set_viewport(size_t in_width, size_t in_height)
 	{
 		height = in_height;
-		width = in_width;	
+		width = in_width;
 	}
 
 	template<typename VB, typename RT>
@@ -117,26 +118,36 @@ namespace cg::renderer
 			vertices[0] = vertex_buffer->item(index_buffer->item(vertex_id++));
 			vertices[1] = vertex_buffer->item(index_buffer->item(vertex_id++));
 			vertices[2] = vertex_buffer->item(index_buffer->item(vertex_id++));
+
 			for (auto& vertex : vertices)
 			{
 				float4 coords{vertex.x, vertex.y, vertex.z, 1.f};
+
 				auto processed_vertex = vertex_shader(coords, vertex);
+
 				vertex.x = processed_vertex.first.x / processed_vertex.first.w;
 				vertex.y = processed_vertex.first.y / processed_vertex.first.w;
 				vertex.z = processed_vertex.first.z / processed_vertex.first.w;
+
 				vertex.x = (vertex.x + 1.f) * width/2.f;
 				vertex.y = (-vertex.y + 1.f) * height/2.f;
 			}
+
 			int2 vertex_a = int2(static_cast<int>(vertices[0].x), static_cast<int>(vertices[0].y));
 			int2 vertex_b = int2(static_cast<int>(vertices[1].x), static_cast<int>(vertices[1].y));
 			int2 vertex_c = int2(static_cast<int>(vertices[2].x), static_cast<int>(vertices[2].y));
+
 			float edge = static_cast<float>(edge_function(vertex_a, vertex_b, vertex_c));
+
 			int2 min_boarder = int2{0, 0};
 			int2 max_boarder = int2{static_cast<int>(width - 1), static_cast<int>(height - 1)};
+
 			int2 min_vertex = min(vertex_a, min(vertex_b, vertex_c));
 			int2 bb_begin = clamp(min_vertex, min_boarder, max_boarder);
+
 			int2 max_vertex = max(vertex_a, max(vertex_b, vertex_c));
 			int2 bb_end = clamp(max_vertex, min_boarder, max_boarder);
+
 			for (int x = bb_begin.x; x <= bb_end.x; x++)
 			{
 				for (int y = bb_begin.y; y <= bb_end.y; y++)
@@ -145,12 +156,14 @@ namespace cg::renderer
 					int edge0 = edge_function(vertex_a, vertex_b, point);
 					int edge1 = edge_function(vertex_b, vertex_c, point);
 					int edge2 = edge_function(vertex_c, vertex_a, point);
+
 					if (edge0 >= 0 && edge1 >= 0 && edge2 >= 0)
 					{
 						float u = edge1 / edge;
 						float v = edge2 / edge;
 						float w = edge0 / edge;
 						float depth = u*vertices[0].z + v*vertices[1].z + w*vertices[2].z;
+
 						if (depth_test(depth, static_cast<size_t>(x), static_cast<size_t>(y)))
 						{
 							auto pixel = pixel_shader(vertices[0], 0.f);
