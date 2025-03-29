@@ -237,7 +237,7 @@ void cg::renderer::dx12_renderer::create_root_signature(const D3D12_STATIC_SAMPL
 	))
 }
 
-std::filesystem::path cg::renderer::dx12_renderer::get_shader_path()
+std::filesystem::path cg::renderer::dx12_renderer::get_shader_path(const std::string& shader_name)
 {
 	WCHAR buffer[MAX_PATH];
 	GetModuleFileName(nullptr, buffer, MAX_PATH);
@@ -245,7 +245,7 @@ std::filesystem::path cg::renderer::dx12_renderer::get_shader_path()
 	return shader_path;
 }
 
-ComPtr<ID3DBlob> cg::renderer::dx12_renderer::compile_shader(const std::string& entrypoint, const std::string& target)
+ComPtr<ID3DBlob> cg::renderer::dx12_renderer::compile_shader(const std::filesystem::path& shader_path, const std::string& entrypoint, const std::string& target)
 {
 	ComPtr<ID3DBlob> shader, error;
 	UINT compile_flags = 0;
@@ -274,7 +274,7 @@ ComPtr<ID3DBlob> cg::renderer::dx12_renderer::compile_shader(const std::string& 
 	return shader;
 }
 
-void cg::renderer::dx12_renderer::create_pso()
+void cg::renderer::dx12_renderer::create_pso(const std::string& shader_name)
 {
 	auto vertex_shader = compile_shader(get_shader_path(shader_name), "VSMain", "vs_5_0");
 	auto pixel_shader = compile_shader(get_shader_path(shader_name), "PSMain", "ps_5_0");
@@ -338,6 +338,7 @@ void cg::renderer::dx12_renderer::copy_data(const void* buffer_data, UINT buffer
 	));
 	memcpy(buffer_data_begin, buffer_data, buffer_size);
 	destination_resource->Unmap(0, 0);
+
 }
 
 void cg::renderer::dx12_renderer::copy_data(const void* buffer_data, const UINT buffer_size, ComPtr<ID3D12Resource>& destination_resource, ComPtr<ID3D12Resource>& intermediate_resource, D3D12_RESOURCE_STATES state_after, int row_pitch, int slice_pitch)
